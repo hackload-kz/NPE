@@ -2,7 +2,7 @@
 
 --changeset akmal:booking-feature-0
 --preconditions onFail:MARK_RAN onError:HALT onUpdateSql:FAIL
---precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM information_schema.tables WHERE UPPER(table_name) = 'EVENTS';
+--precondition-sql-check expectedResult:0 SELECT COUNT(*) FROM information_schema.tables WHERE UPPER(table_name) = 'USERS';
 CREATE TABLE USERS
 (
     USER_ID        NUMERIC(22) PRIMARY KEY,
@@ -68,3 +68,13 @@ CREATE TABLE SEATS
 CREATE SEQUENCE SEATS_SEQ START WITH 1 INCREMENT BY 2;
 --rollback not required
 --comment akmal:booking-feature-3
+
+--changeset akmal:events-0
+--preconditions onFail:MARK_RAN onError:HALT onUpdateSql:FAIL
+--precondition-sql-check expectedResult:0 select count(*) from EVENTS where ID = 1;
+INSERT INTO EVENTS (ID, TITLE, DESCRIPTION, EVENT_TYPE, DATETIME_START, PROVIDER)
+VALUES (1, 'Концерт мировой звезды Селеста Морейра из Лусарии',
+        'В нашу сказочную Көкдалу прилетает мировая музыкальная звезда Селеста Морейра из большой соседней страны Лусария. Ее выступление будет проходить на центральном стадионе, который вмещает в себя 100 тысяч зрителей.',
+        'concert', '2025-12-15 20:00:00', 'Билеттер');
+--rollback rollback
+--comment akmal:events-0
