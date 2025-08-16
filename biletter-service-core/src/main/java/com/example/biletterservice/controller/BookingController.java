@@ -1,21 +1,13 @@
 package com.example.biletterservice.controller;
 
 import com.example.biletterservice.controller.dto.Response;
-import com.example.biletterservice.controller.dto.booking.Booking;
-import com.example.biletterservice.controller.dto.booking.BookingActionRequest;
-import com.example.biletterservice.controller.dto.booking.CancelBookingResponse;
-import com.example.biletterservice.controller.dto.booking.CreateBookingRequest;
-import com.example.biletterservice.controller.dto.booking.CreateBookingResponse;
+import com.example.biletterservice.controller.dto.booking.*;
 import com.example.biletterservice.service.BookingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -33,8 +25,7 @@ public class BookingController {
 
     @GetMapping
     public ResponseEntity<List<Booking>> getBookings() {
-        long userId = 1L; // Todo get user id from SecurityContext
-        return ResponseEntity.ok().body(bookingService.getUserBookings(userId));
+        return ResponseEntity.ok().body(bookingService.getUserBookings());
     }
 
     @PatchMapping("/initiatePayment")
