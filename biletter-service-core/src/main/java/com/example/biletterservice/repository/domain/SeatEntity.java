@@ -43,6 +43,6 @@ public class SeatEntity {
     @JoinColumn(name = "BOOKING_ID")
     private BookingEntity booking;
 
-    @Column(name = "INTERNAL_ID", unique = true)
-    private UUID internalId;
+    @Column(name = "EXTERNAL_ID", unique = true)
+    private UUID externalId;
 }
