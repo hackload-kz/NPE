@@ -9,7 +9,7 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>biletter-service</module>
+        <module>biletter-service-core</module>
     </modules>
 
     <dependencyManagement>
