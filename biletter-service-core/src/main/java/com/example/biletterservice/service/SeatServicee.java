@@ -11,13 +11,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @RequiredArgsConstructor
@@ -26,49 +24,96 @@ public class SeatServicee {
     private static final Logger log = LoggerFactory.getLogger(SeatServicee.class);
     private final SeatRepository seatRepository;
     private final SeatClient seatClient;
+    private static final int PAGE_SIZE = 1000;
 
     @PostConstruct
     public void testSeats() {
-        List<SeatDto> seatDtoList = seatClient.getAllSeats();
-        int chunkSize = 1000;
         ExecutorService executor = Executors.newFixedThreadPool(10);
+        AtomicInteger totalSeats = new AtomicInteger(0);
 
-        List<List<SeatDto>> chunks = new ArrayList<>();
-        for (int i = 0; i < seatDtoList.size(); i += chunkSize) {
-            chunks.add(seatDtoList.subList(i, Math.min(i + chunkSize, seatDtoList.size())));
-        }
-        List<CompletableFuture<Void>> futures = chunks.stream()
-                .map(chunk -> CompletableFuture.runAsync(() -> processChunk(chunk), executor))
-                .toList();
-
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        executor.shutdown();
-    }
-
-    private void processChunk(List<SeatDto> chunk) {
         try {
-            Set<SeatEntity> batch = new HashSet<>();
-            for (SeatDto dto : chunk) {
-                SeatEntity seatEntity = new SeatEntity();
-
-                //внутренний идентификатор места
-                seatEntity.setInternalId(dto.getId());
-                seatEntity.setRow(dto.getRow());
-                seatEntity.setNumber(dto.getSeat());
-                if (dto.getIsFree()) {
-                    seatEntity.setStatus(SeatStatus.FREE);
-                } else {
-                    seatEntity.setStatus(SeatStatus.RESERVED);
-                }
-
-                batch.add(seatEntity);
+            for (int i = 1; i <= 100; i++) {
+                final int index = i;
+                executor.submit(() -> {
+                    try {
+                        List<SeatDto> seats = seatClient.getAllSeats(index, 1000);
+                        List<SeatEntity> entities = seats.stream()
+                                .map(this::convertToEntity)
+                                .toList();
+                        seatRepository.saveAll(entities);
+                        totalSeats.addAndGet(seats.size());
+                        System.out.println("Поток " + Thread.currentThread().getName() +
+                                " обработал index=" + index + ", записей: " + seats.size());
+                    } catch (Exception e) {
+                        System.err.println("Ошибка для index=" + index + ": " + e.getMessage());
+                    }
+                });
             }
 
-            seatRepository.saveAll(batch);
+            executor.shutdown();
+            try {
+                if (!executor.awaitTermination(120, TimeUnit.SECONDS)) {
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
 
-            log.info("Thread {}: saved {} seats", Thread.currentThread().getName(), batch.size());
-        } catch (Exception e) {
-            log.error("Error in thread {}: {}", Thread.currentThread().getName(), e.getMessage(), e);
+            System.out.println("Всего записей обработано: " + totalSeats.get());
+        } finally {
+            if (!executor.isTerminated()) {
+                executor.shutdownNow();
+            }
         }
     }
+
+    private SeatEntity convertToEntity(SeatDto dto) {
+        SeatEntity seatEntity = new SeatEntity()
+                .setNumber(dto.getSeat())
+                .setRow(dto.getRow())
+                .setInternalId(dto.getId());
+        if (dto.getIsFree() != null && dto.getIsFree()) {
+            seatEntity.setStatus(SeatStatus.FREE);
+        } else {
+            seatEntity.setStatus(SeatStatus.RESERVED);
+        }
+        return seatEntity;
+    }
+
+    /*@Async
+    @EventListener(ApplicationReadyEvent.class)
+    public void initSeatsOnStartup() {
+        int page = 1;
+        while (true) {
+            List<SeatDto> dtos = seatClient.getAllSeats(page, PAGE_SIZE);
+            if (dtos == null || dtos.isEmpty()) break;
+
+            List<SeatEntity> batch = new ArrayList<>(dtos.size());
+            batch.addAll(dtos.parallelStream()
+                    .map(this::convertToEntity)
+                    .toList()
+            );
+
+
+            saveBatch(batch);
+
+            if (dtos.size() < PAGE_SIZE) break;
+            page++;
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void saveBatch(List<SeatEntity> batch) {
+        seatRepository.saveAll(batch);
+    }
+
+    private SeatEntity convertToEntity(SeatDto dto) {
+        return new SeatEntity()
+                .setNumber(dto.getSeat())
+                .setRow(dto.getRow())
+                .setInternalId(dto.getId())
+                .setStatus(Boolean.TRUE.equals(dto.getIsFree())
+                        ? SeatStatus.FREE : SeatStatus.RESERVED);
+    }*/
 }

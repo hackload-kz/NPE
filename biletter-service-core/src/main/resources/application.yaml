@@ -5,9 +5,15 @@ spring:
     change-log: classpath:db/changelog/changelog-master.xml
     enabled: true
   jpa:
-    hibernate:
-      ddl-auto: none
-      show-sql: true
+    properties:
+      hibernate:
+        ddl-auto: none
+        show-sql: true
+        jdbc:
+          batch_size: 1000
+          batch_versioned_data: true
+        order_inserts: true
+        order_updates: true
 
   datasource:
     password: postgres
