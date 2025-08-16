@@ -1,6 +1,6 @@
 package com.example.biletterservice.controller.dto.booking;
 
-import com.example.biletterservice.controller.dto.seats.Seats;
+import com.example.biletterservice.controller.dto.seats.Seat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -15,5 +15,5 @@ public class Booking {
     @JsonProperty("event_id")
     private Long eventId;
     @JsonProperty("seats")
-    private List<Seats> seats;
+    private List<Seat> seats;
 }

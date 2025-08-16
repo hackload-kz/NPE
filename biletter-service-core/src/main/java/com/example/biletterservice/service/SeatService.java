@@ -1,7 +1,7 @@
 package com.example.biletterservice.service;
 
 import com.example.biletterservice.client.SeatClient;
-import com.example.biletterservice.controller.dto.seats.Seats;
+import com.example.biletterservice.controller.dto.seats.Seat;
 import com.example.biletterservice.repository.SeatRepository;
 import com.example.biletterservice.repository.domain.SeatEntity;
 import com.example.biletterservice.repository.domain.enumeration.SeatStatus;
@@ -18,42 +18,38 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class SeatService {
-
     private final SeatRepository seatRepository;
     private final SeatClient seatClient;
     @Value("${batch.size}")
-    private int PAGE_SIZE;
+    private int pageBatchSize;
 
     @PostConstruct
     public void initSeatsOnStartup() {
         int page = 1;
-        boolean temp = true;
         if (seatRepository.count() > 0) {
-            log.info("Seats already present — skip import");
-            temp = false;
+            log.debug("Delete all seats");
+            seatRepository.deleteAll();
         }
-        if (temp) {
-            while (true) {
-                List<Seats> dtos = seatClient.getAllSeats(page, PAGE_SIZE);
-                if (dtos == null || dtos.isEmpty()) break;
 
-                List<SeatEntity> batch = new ArrayList<>(dtos.size());
-                batch.addAll(dtos.parallelStream()
-                        .map(this::convertToEntity)
-                        .toList()
-                );
+        while (true) {
+            List<Seat> dtos = seatClient.getAllSeats(page, pageBatchSize);
+            if (dtos == null || dtos.isEmpty()) break;
+
+            List<SeatEntity> batch = new ArrayList<>(dtos.size());
+            batch.addAll(dtos.parallelStream()
+                    .map(this::convertToEntity)
+                    .toList()
+            );
 
 
-                seatRepository.saveAll(batch);
+            seatRepository.saveAll(batch);
 
-                if (dtos.size() < PAGE_SIZE) break;
-                page++;
-            }
-            log.info("!!!!!!!! SEATS INITIALIZED SUCCESSFULLY !!!!!!!!");
+            if (dtos.size() < pageBatchSize) break;
+            page++;
         }
     }
 
-    private SeatEntity convertToEntity(Seats dto) {
+    private SeatEntity convertToEntity(Seat dto) {
         return new SeatEntity()
                 .setNumber(dto.getSeat())
                 .setRow(dto.getRow())

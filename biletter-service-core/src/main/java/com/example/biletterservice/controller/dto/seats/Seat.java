@@ -8,7 +8,7 @@ import java.util.UUID;
 
 @Data
 @Accessors(chain = true)
-public class Seats {
+public class Seat {
     @JsonProperty("id")
     private UUID id;
     @JsonProperty("row")
