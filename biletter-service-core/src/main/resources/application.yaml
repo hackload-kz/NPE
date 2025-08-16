@@ -20,3 +20,7 @@ spring:
     username: postgres
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://db:5432/biletterdb
+batch:
+  size: 1000
+service-provider:
+  url: https://hub.hackload.kz/event-provider/common

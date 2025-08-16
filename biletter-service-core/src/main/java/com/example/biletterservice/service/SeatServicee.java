@@ -5,83 +5,30 @@ import com.example.biletterservice.client.dto.SeatDto;
 import com.example.biletterservice.repository.SeatRepository;
 import com.example.biletterservice.repository.domain.SeatEntity;
 import com.example.biletterservice.repository.domain.enumeration.SeatStatus;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SeatServicee {
 
-    private static final Logger log = LoggerFactory.getLogger(SeatServicee.class);
     private final SeatRepository seatRepository;
     private final SeatClient seatClient;
-    private static final int PAGE_SIZE = 1000;
+    @Value("${batch.size}")
+    private int PAGE_SIZE;
 
-    @PostConstruct
-    public void testSeats() {
-        ExecutorService executor = Executors.newFixedThreadPool(10);
-        AtomicInteger totalSeats = new AtomicInteger(0);
-
-        try {
-            for (int i = 1; i <= 100; i++) {
-                final int index = i;
-                executor.submit(() -> {
-                    try {
-                        List<SeatDto> seats = seatClient.getAllSeats(index, 1000);
-                        List<SeatEntity> entities = seats.stream()
-                                .map(this::convertToEntity)
-                                .toList();
-                        seatRepository.saveAll(entities);
-                        totalSeats.addAndGet(seats.size());
-                        System.out.println("Поток " + Thread.currentThread().getName() +
-                                " обработал index=" + index + ", записей: " + seats.size());
-                    } catch (Exception e) {
-                        System.err.println("Ошибка для index=" + index + ": " + e.getMessage());
-                    }
-                });
-            }
-
-            executor.shutdown();
-            try {
-                if (!executor.awaitTermination(120, TimeUnit.SECONDS)) {
-                    executor.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                executor.shutdownNow();
-                Thread.currentThread().interrupt();
-            }
-
-            System.out.println("Всего записей обработано: " + totalSeats.get());
-        } finally {
-            if (!executor.isTerminated()) {
-                executor.shutdownNow();
-            }
-        }
-    }
-
-    private SeatEntity convertToEntity(SeatDto dto) {
-        SeatEntity seatEntity = new SeatEntity()
-                .setNumber(dto.getSeat())
-                .setRow(dto.getRow())
-                .setInternalId(dto.getId());
-        if (dto.getIsFree() != null && dto.getIsFree()) {
-            seatEntity.setStatus(SeatStatus.FREE);
-        } else {
-            seatEntity.setStatus(SeatStatus.RESERVED);
-        }
-        return seatEntity;
-    }
-
-    /*@Async
+    @Async
     @EventListener(ApplicationReadyEvent.class)
     public void initSeatsOnStartup() {
         int page = 1;
@@ -101,6 +48,7 @@ public class SeatServicee {
             if (dtos.size() < PAGE_SIZE) break;
             page++;
         }
+        log.info("!!!!!!!! SEATS INITIALIZED SUCCESSFULLY !!!!!!!!");
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -115,5 +63,5 @@ public class SeatServicee {
                 .setInternalId(dto.getId())
                 .setStatus(Boolean.TRUE.equals(dto.getIsFree())
                         ? SeatStatus.FREE : SeatStatus.RESERVED);
-    }*/
+    }
 }
