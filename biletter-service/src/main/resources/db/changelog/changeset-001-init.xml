@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd">
+
+
+    <changeSet id="001-init-user" author="afonya">
+        <createTable tableName="biletter_users">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- booking -->
+    <changeSet id="001-init-booking" author="afonya">
+        <createSequence sequenceName="booking_seq" startValue="1" incrementBy="50"/>
+
+        <createTable tableName="booking">
+            <column name="id" type="BIGINT">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="event_id" type="BIGINT"/>
+            <column name="status" type="VARCHAR(50)"/>
+        </createTable>
+    </changeSet>
+
+    <!-- seats -->
+    <changeSet id="002-init-seats" author="afonya">
+        <createSequence sequenceName="seats_seq" startValue="1" incrementBy="50"/>
+
+        <createTable tableName="seats">
+            <column name="id" type="BIGINT">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="row" type="INT"/>
+            <column name="number" type="INT"/>
+            <column name="status" type="VARCHAR(50)"/>
+            <column name="booking_id" type="BIGINT"/>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="seats" baseColumnNames="booking_id"
+                referencedTableName="booking" referencedColumnNames="id"
+                constraintName="fk_seats_booking"/>
+    </changeSet>
+</databaseChangeLog>
