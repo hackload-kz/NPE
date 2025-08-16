@@ -1,5 +1,6 @@
 package com.example.biletterservice.controller;
 
+import com.example.biletterservice.service.exception.UserValidationException;
 import com.example.biletterservice.service.exception.ValidationException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler({ValidationException.class})
     public String handleGeneralException(ValidationException ex, HttpServletRequest request) {
         logger.error("Validation error: " + ex.getMessage());
+        return ex.getMessage();
+    }
+
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    @ExceptionHandler({UserValidationException.class})
+    public String handleUserValidationException(ValidationException ex, HttpServletRequest request) {
+        logger.error("User validation error: " + ex.getMessage());
         return ex.getMessage();
     }
 }
