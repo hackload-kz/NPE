@@ -42,7 +42,7 @@ public class BookingService {
 
     public void initiatePayment(Long bookingId) {
         var booking = bookingRepository.findById(bookingId).orElseThrow(() -> new ValidationException(String.format("Booking with id [%d] does not exist", bookingId)));
-        if (!validateBookingStatus(booking.getStatus(), BookingStatus.SEATS_CHOSEN)) {
+        if (!validateBookingStatus(booking.getStatus(), BookingStatus.CREATED)) {
             throw new ValidationException(String.format("Booking with id [%d] does not initiated. Booking on wrong status", bookingId));
         }
         booking.setStatus(BookingStatus.PAYMENT_INITIATED);
