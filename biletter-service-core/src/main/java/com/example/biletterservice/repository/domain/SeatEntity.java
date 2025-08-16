@@ -16,6 +16,8 @@ import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import java.util.UUID;
+
 @Accessors(chain = true)
 @Data
 @Entity
@@ -40,4 +42,7 @@ public class SeatEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "BOOKING_ID")
     private BookingEntity booking;
+
+    @Column(name = "INTERNAL_ID", unique = true)
+    private UUID internalId;
 }
