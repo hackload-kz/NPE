@@ -22,6 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @Service
 @RequiredArgsConstructor
 public class BookingService {
+    private static final String BOOKING_LOCK_PREFIX =  "BOOKING_LOCK_";
     private final BookingRepository bookingRepository;
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
@@ -46,22 +47,16 @@ public class BookingService {
     }
 
     public void initiatePayment(Long bookingId) {
-        String lockKey = "BOOKING_LOCK_" + bookingId;
+        String lockKey = BOOKING_LOCK_PREFIX + bookingId;
         ReentrantLock lock = locks.computeIfAbsent(lockKey, k -> new ReentrantLock());
         lock.lock();
         try {
             var booking = bookingRepository.findById(bookingId).orElseThrow(() -> new ValidationException(String.format("Booking with id [%d] does not exist", bookingId)));
 
+            validateUser(booking.getUser());
+
             if (!validateBookingStatus(booking.getStatus(), BookingStatus.CREATED)) {
                 throw new ValidationException(String.format("Booking with id [%d] in wrong state, expected: '%s'", bookingId, BookingStatus.CREATED.name()));
-            }
-
-            UserEntity bookingUser = booking.getUser();
-            var bookingUserId = bookingUser.getId();
-            var userId = getUserId();
-
-            if (!validateUserId(userId, bookingUserId)) {
-                throw new UserValidationException(String.format("Not equals current user id [%d] and booking user id: [%d]", userId, bookingUserId));
             }
 
             booking.setStatus(BookingStatus.PAYMENT_INITIATED);
@@ -73,10 +68,26 @@ public class BookingService {
     }
 
     public void cancel(long bookingId) {
-        var booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new ValidationException(String.format("Booking with id [%d] does not exist", bookingId)));
-        booking.setStatus(BookingStatus.CANCELED);
-        bookingRepository.save(booking);
+        String lockKey = BOOKING_LOCK_PREFIX + bookingId;
+        ReentrantLock lock = locks.computeIfAbsent(lockKey, k -> new ReentrantLock());
+        lock.lock();
+        try {
+            var booking = bookingRepository.findById(bookingId)
+                    .orElseThrow(() -> new ValidationException(String.format("Booking with id [%d] does not exist", bookingId)));
+
+            validateUser(booking.getUser());
+
+            if (!validateBookingStatus(booking.getStatus(), BookingStatus.PAYMENT_INITIATED)) {
+                throw new ValidationException(String.format("Booking with id [%d] in wrong state, expected: '%s'", bookingId, BookingStatus.PAYMENT_INITIATED.name()));
+            }
+
+            booking.setStatus(BookingStatus.CANCELED);
+            bookingRepository.save(booking);
+
+        } finally {
+            lock.unlock();
+            locks.remove(lockKey, lock);
+        }
     }
 
     private long getUserId() {
@@ -90,5 +101,14 @@ public class BookingService {
 
     private boolean validateUserId(long userId, long expectedUserId) {
         return userId == expectedUserId;
+    }
+
+    private void validateUser(UserEntity expectedUser) {
+        var bookingUserId = expectedUser.getId();
+        var userId = getUserId();
+
+        if (!validateUserId(userId, bookingUserId)) {
+            throw new UserValidationException(String.format("Not equals current user id [%d] and booking user id: [%d]", userId, bookingUserId));
+        }
     }
 }
