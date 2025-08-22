@@ -1,7 +1,7 @@
 package com.example.biletterservice.service;
 
 import com.example.biletterservice.client.SeatClient;
-import com.example.biletterservice.controller.dto.seats.Seat;
+import com.example.biletterservice.controller.dto.seats.SeatResponse;
 import com.example.biletterservice.repository.SeatRepository;
 import com.example.biletterservice.repository.domain.SeatEntity;
 import com.example.biletterservice.repository.domain.enumeration.SeatStatus;
@@ -32,7 +32,7 @@ public class SeatService {
         }
 
         while (true) {
-            List<Seat> dtos = seatClient.getAllSeats(page, pageBatchSize);
+            List<SeatResponse> dtos = seatClient.getAllSeats(page, pageBatchSize);
             if (dtos == null || dtos.isEmpty()) break;
 
             List<SeatEntity> batch = new ArrayList<>(dtos.size());
@@ -49,12 +49,12 @@ public class SeatService {
         }
     }
 
-    private SeatEntity convertToEntity(Seat dto) {
+    private SeatEntity convertToEntity(SeatResponse seatResponse) {
         return new SeatEntity()
-                .setNumber(dto.getSeat())
-                .setRow(dto.getRow())
-                .setExternalId(dto.getId())
-                .setStatus(Boolean.TRUE.equals(dto.getIsFree())
+                .setNumber(seatResponse.getSeat())
+                .setRow(seatResponse.getRow())
+                .setExternalId(seatResponse.getId())
+                .setStatus(Boolean.TRUE.equals(seatResponse.getIsFree())
                         ? SeatStatus.FREE : SeatStatus.RESERVED);
     }
 }

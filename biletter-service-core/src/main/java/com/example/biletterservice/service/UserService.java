@@ -3,9 +3,9 @@ package com.example.biletterservice.service;
 import com.example.biletterservice.repository.UserRepository;
 import com.example.biletterservice.repository.domain.UserEntity;
 import com.example.biletterservice.service.dto.UserDto;
+import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 @Slf4j

@@ -8,10 +8,13 @@ import java.util.UUID;
 
 @Data
 @Accessors(chain = true)
-public class Seat {
-    private Long id;
+public class SeatResponse {
+    @JsonProperty("id")
+    private UUID id;
+    @JsonProperty("row")
     private Integer row;
+    @JsonProperty("seat")
     private Integer seat;
+    @JsonProperty("is_free")
     private Boolean isFree;
-    private UUID internalId;
 }
